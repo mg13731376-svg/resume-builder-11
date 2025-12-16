@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>رزومه‌ساز آنلاین</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    /* Basic UI */
+    body {font-family: Vazirmatn, Tahoma, "Noto Sans Arabic", sans-serif; margin:0; background:#f5f7fa; color:#111}
+    header {background:#1f2937; color:#fff; padding:1rem; text-align:center}
+    main {display:grid; grid-template-columns: 1fr 1fr; gap:1rem; padding:1rem}
+    .card {background:#fff; border-radius:12px; padding:1rem; box-shadow:0 4px 10px rgba(0,0,0,.08)}
+    h2 {margin-top:0; font-size:1.1rem}
+    label {display:block; margin-top:.5rem; font-size:.95rem}
+    input, textarea, select {width:100%; padding:.4rem; border-radius:6px; border:1px solid #ccc; font-size:0.95rem; box-sizing:border-box}
+    textarea {resize:vertical; min-height:64px}
+    .controls {display:flex; gap:.5rem; margin-top:1rem; flex-wrap:wrap}
+    button {padding:.6rem 1rem; border:none; border-radius:8px; background:#2563eb; color:#fff; cursor:pointer}
+    button.secondary {background:#6b7280}
+    #resume {padding:1.5rem; direction:rtl}
+    #resume h1 {margin:0}
+    .section {margin-top:1rem}
+    ul {padding-right:1.2rem; margin:0}
+    @media(max-width:900px){ main{grid-template-columns:1fr} }
+
+    /* PDF / print layout helpers */
+    .resume-sheet {
+      background: #fff;
+      border-radius: 6px;
+      padding: 18mm; /* printable padding */
+      box-sizing: border-box;
+      width: 210mm; /* A4 width - helps html2pdf */
+      min-height: 297mm;
+      margin: 0 auto;
+    }
+    /* Avoid page breaks inside sections */
+    .section { page-break-inside: avoid; -webkit-column-break-inside: avoid; break-inside: avoid; }
+
+  </style>
+</head>
+<body>
+<header>
+  <h1>رزومه‌ساز آنلاین + خروجی PDF</h1>
+</header>
+
+<main>
+  <!-- Form -->
+  <div class="card" aria-labelledby="form-heading">
+    <h2 id="form-heading">اطلاعات رزومه</h2>
+
+    <form id="cvForm" onsubmit="return false" novalidate>
+      <label for="name">نام و نام خانوادگی</label>
+      <input id="name" name="name" autocomplete="name" placeholder="مثال: علی رضایی" autofocus />
+
+      <label for="title">عنوان شغلی</label>
+      <input id="title" name="title" placeholder="مثال: توسعه‌دهنده فرانت‌اند" />
+
+      <label for="email">ایمیل</label>
+      <input id="email" name="email" type="email" placeholder="example@domain.com" />
+
+      <label for="phone">شماره تماس</label>
+      <input id="phone" name="phone" type="tel" placeholder="+98 912 000 0000" />
+
+      <label for="location">آدرس / شهر</label>
+      <input id="location" name="location" placeholder="تهران، ایران" />
+
+      <label for="summary">خلاصه حرفه‌ای</label>
+      <textarea id="summary" name="summary" placeholder="خلاصه‌ای کوتاه دربارهٔ خود بنویسید..."></textarea>
+
+      <label for="experience">سوابق شغلی (هر مورد در یک خط)</label>
+      <textarea id="experience" name="experience" placeholder="شرکت — عنوان — سال‌ها"></textarea>
+
+      <label for="education">تحصیلات (هر مورد در یک خط)</label>
+      <textarea id="education" name="education" placeholder="مقطع — دانشگاه — سال"></textarea>
+
+      <label for="skills">مهارت‌ها (با ویرگول جدا شود)</label>
+      <textarea id="skills" name="skills" placeholder="HTML, CSS, JavaScript"></textarea>
+
+      <label for="languages">زبان‌ها (هر مورد در یک خط یا با ویرگول)</label>
+      <textarea id="languages" name="languages" placeholder="فارسی — مادری\nانگلیسی — حرفه‌ای"></textarea>
+
+      <label for="certs">دوره‌ها / گواهینامه‌ها (هر مورد در یک خط)</label>
+      <textarea id="certs" name="certs"></textarea>
+
+      <div class="controls">
+        <button id="generate" type="button">نمایش رزومه</button>
+        <button id="download" type="button" class="secondary">دانلود PDF</button>
+        <button id="clear" type="button" class="secondary">پاک کردن فرم</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Resume Preview -->
+  <div class="card" id="resume" aria-live="polite">
+    <div class="resume-sheet" id="resumeSheet" dir="rtl" lang="fa">
+      <h1 id="r_name"></h1>
+      <strong id="r_title"></strong>
+      <p id="r_contact" style="margin-top:.4rem; color:#444"></p>
+
+      <div class="section">
+        <h3>خلاصه حرفه‌ای</h3>
+        <p id="r_summary"></p>
+      </div>
+
+      <div class="section">
+        <h3>سوابق شغلی</h3>
+        <ul id="r_experience"></ul>
+      </div>
+
+      <div class="section">
+        <h3>تحصیلات</h3>
+        <ul id="r_education"></ul>
+      </div>
+
+      <div class="section">
+        <h3>مهارت‌ها</h3>
+        <p id="r_skills"></p>
+      </div>
+
+      <div class="section">
+        <h3>زبان‌ها</h3>
+        <p id="r_languages"></p>
+      </div>
+
+      <div class="section">
+        <h3>دوره‌ها و گواهینامه‌ها</h3>
+        <ul id="r_certs"></ul>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* Utility to create list items safely from text with newlines */
+function fillList(container, text){
+  container.innerHTML = ''; // clear
+  if(!text) return;
+  const lines = text.split(/[\n\r]+/).map(l=>l.trim()).filter(Boolean);
+  lines.forEach(line=>{
+    const li = document.createElement('li');
+    li.textContent = line;
+    container.appendChild(li);
+  });
+}
+
+/* For comma-separated skills/languages, produce a readable string */
+function joinCommaSeparated(text){
+  if(!text) return '';
+  // accept commas or newlines as separators
+  return text.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean).join('، ');
+}
+
+document.addEventListener('DOMContentLoaded', ()=> {
+  const nameEl = document.getElementById('name');
+  const titleEl = document.getElementById('title');
+  const emailEl = document.getElementById('email');
+  const phoneEl = document.getElementById('phone');
+  const locationEl = document.getElementById('location');
+  const summaryEl = document.getElementById('summary');
+  const experienceEl = document.getElementById('experience');
+  const educationEl = document.getElementById('education');
+  const skillsEl = document.getElementById('skills');
+  const languagesEl = document.getElementById('languages');
+  const certsEl = document.getElementById('certs');
+
+  const r_name = document.getElementById('r_name');
+  const r_title = document.getElementById('r_title');
+  const r_contact = document.getElementById('r_contact');
+  const r_summary = document.getElementById('r_summary');
+  const r_experience = document.getElementById('r_experience');
+  const r_education = document.getElementById('r_education');
+  const r_skills = document.getElementById('r_skills');
+  const r_languages = document.getElementById('r_languages');
+  const r_certs = document.getElementById('r_certs');
+
+  function generateResume(){
+    r_name.textContent = nameEl.value.trim();
+    r_title.textContent = titleEl.value.trim();
+    const contactParts = [];
+    if(emailEl.value.trim()) contactParts.push(emailEl.value.trim());
+    if(phoneEl.value.trim()) contactParts.push(phoneEl.value.trim());
+    if(locationEl.value.trim()) contactParts.push(locationEl.value.trim());
+    r_contact.textContent = contactParts.join(' | ');
+    r_summary.textContent = summaryEl.value.trim();
+
+    fillList(r_experience, experienceEl.value);
+    fillList(r_education, educationEl.value);
+    r_skills.textContent = joinCommaSeparated(skillsEl.value);
+    r_languages.textContent = joinCommaSeparated(languagesEl.value);
+    fillList(r_certs, certsEl.value);
+  }
+
+  document.getElementById('generate').addEventListener('click', generateResume);
+
+  document.getElementById('clear').addEventListener('click', ()=> {
+    if(!confirm('همه فیلدها پاک شوند؟')) return;
+    document.getElementById('cvForm').reset();
+    // clear preview
+    r_name.textContent = '';
+    r_title.textContent = '';
+    r_contact.textContent = '';
+    r_summary.textContent = '';
+    r_experience.innerHTML = '';
+    r_education.innerHTML = '';
+    r_skills.textContent = '';
+    r_languages.textContent = '';
+    r_certs.innerHTML = '';
+  });
+
+  document.getElementById('download').addEventListener('click', ()=> {
+    // Ensure preview is up-to-date
+    generateResume();
+
+    const element = document.getElementById('resumeSheet');
+
+    const opt = {
+      margin:       [10, 10, 10, 10], // top,right,bottom,left in mm-ish
+      filename:     'رزومه.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Use html2pdf with options (works client-side)
+    html2pdf().set(opt).from(element).save().catch(err => {
+      // fallback: try without saving options
+      console.error('خطا در تولید PDF:', err);
+      alert('خطا در تولید PDF. کنسول را بررسی کنید.');
+    });
+  });
+
+  // Optionally: generate initial preview if fields are prefilled
+  generateResume();
+});
+</script>
+</body>
+</html>
